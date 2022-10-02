@@ -2,6 +2,8 @@
 #include "Walnut/EntryPoint.h"
 
 #include "Walnut/Image.h"
+#include "Walnut/Timer.h"
+
 using namespace Walnut;
 
 class ExampleLayer : public Walnut::Layer
@@ -10,6 +12,8 @@ public:
 	virtual void OnUIRender() override
 	{
 		ImGui::Begin("Hello");
+		ImGui::Text("Last render: %.3fs", m_LastRenderTime);
+
 		if (ImGui::Button("Render"))
 		{
 			Render();
@@ -22,16 +26,25 @@ public:
 
 		m_ViewportWidth = ImGui::GetContentRegionAvail().x;
 		m_ViewportHeight = ImGui::GetContentRegionAvail().y;
+		if (m_PrevWidth != m_ViewportWidth || m_PrevHeight != m_ViewportHeight)
+		{
+			m_PrevWidth = m_ViewportWidth;
+			m_PrevHeight = m_ViewportHeight;
+		}
 
 		if (m_Image)
 			ImGui::Image(m_Image->GetDescriptorSet(), { (float)m_Image->GetWidth(), (float)m_Image->GetHeight() });
+		
 
 		ImGui::End();
 		ImGui::PopStyleVar();
 	}
 
+
 	void Render()
 	{
+		Timer timer;
+
 		if (!m_Image || m_ViewportWidth != m_Image->GetWidth() || m_ViewportHeight != m_Image->GetHeight())
 		{
 			m_Image = std::make_shared<Image>(m_ViewportWidth, m_ViewportHeight, ImageFormat::RGBA);
@@ -45,12 +58,19 @@ public:
 		}
 
 		m_Image->SetData(m_ImageData);
+
+		m_LastRenderTime = timer.Elapsed();
 	}
+
 private:
 	std::shared_ptr<Image> m_Image;
 
-	uint32_t m_ViewportWidth;
-	uint32_t m_ViewportHeight;
+	uint32_t m_ViewportWidth = 0;
+	uint32_t m_ViewportHeight = 0;
+	uint32_t m_PrevWidth = -1;
+	uint32_t m_PrevHeight = -1;
+
+	float m_LastRenderTime = 0.0f;
 
 	uint32_t* m_ImageData = nullptr;
 };
